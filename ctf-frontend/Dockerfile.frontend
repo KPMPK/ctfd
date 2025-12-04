@@ -1,0 +1,45 @@
+FROM node:18 AS build
+
+WORKDIR /app
+
+COPY package.json ./
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+# Serve with Nginx unprivileged
+FROM nginx:alpine
+
+ARG UID=101
+ARG GID=101
+
+# Copy custom Nginx configuration
+# Make sure it listens on 8080, not 80
+COPY default.conf /etc/nginx/conf.d/default.conf
+
+# Copy React build files
+COPY --from=0 /app/build /usr/share/nginx/html
+
+# implement changes required to run NGINX as an unprivileged user
+RUN sed -i 's,listen       80;,listen       8080;,' /etc/nginx/conf.d/default.conf \
+    && sed -i '/user  nginx;/d' /etc/nginx/nginx.conf \
+    && sed -i 's,/var/run/nginx.pid,/tmp/nginx.pid,' /etc/nginx/nginx.conf \
+    && sed -i "/^http {/a \    proxy_temp_path /tmp/proxy_temp;\n    client_body_temp_path /tmp/client_temp;\n    fastcgi_temp_path /tmp/fastcgi_temp;\n    uwsgi_temp_path /tmp/uwsgi_temp;\n    scgi_temp_path /tmp/scgi_temp;\n" /etc/nginx/nginx.conf \
+# nginx user must own the cache and etc directory to write cache and tweak the nginx config
+    && chown -R $UID:0 /var/cache/nginx \
+    && chmod -R g+w /var/cache/nginx \
+    && chown -R $UID:0 /etc/nginx \
+    && chmod -R g+w /etc/nginx
+
+# Adjust permissions for nginx user
+RUN mkdir -p /var/cache/nginx /var/run /var/log/nginx \
+    && chown -R nginx:nginx /var/cache/nginx /var/run /var/log/nginx /usr/share/nginx/html
+
+STOPSIGNAL SIGQUIT
+
+USER $UID
+
+CMD ["nginx", "-g", "daemon off;"]
+

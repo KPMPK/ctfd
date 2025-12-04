@@ -1,0 +1,30 @@
+# -------- Builder Stage --------
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci
+COPY . .
+RUN REACT_APP_API_BASE_URL=https://ai-ctf.ai.local \
+    REACT_APP_SHOW_GUARDRAILS_BUTTON=true \
+    npm run build
+
+# -------- Runner Stage --------
+FROM node:18-alpine AS runner
+
+WORKDIR /app
+
+# Install lightweight static server
+RUN npm install -g serve
+
+# Copy build files
+COPY --from=builder /app/build ./build
+
+# Allow ANY unprivileged user to read static files
+RUN chmod -R a+r /app/build
+
+USER node
+
+EXPOSE 3000
+
+CMD ["serve", "-s", "build", "-l", "3000"]

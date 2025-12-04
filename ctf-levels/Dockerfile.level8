@@ -1,0 +1,41 @@
+# ============================
+# Stage 1 — Builder
+# ============================
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+# Install dependencies into /install (no venv needed)
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+
+# ============================
+# Stage 2 — Runtime (non-root)
+# ============================
+FROM python:3.12-slim
+
+# ---- Install vim (small footprint) ----
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends vim && \
+    rm -rf /var/lib/apt/lists/*
+
+# ---- Create non-root user ----
+RUN useradd -m -u 1000 appuser
+
+WORKDIR /app
+
+# Copy Python packages from builder
+COPY --from=builder /install /usr/local
+
+# Copy app files and set permissions
+COPY ai.png user.png config.py level8.py .
+RUN chown -R appuser:appuser /app
+
+
+USER appuser
+
+EXPOSE 8508
+CMD ["streamlit", "run", "level8.py", "--server.port=8508", "--server.address=0.0.0.0", "--server.headless=true", "--server.runOnSave=true", "--server.enableXsrfProtection=false" , "--server.enableCORS=false", "--browser.gatherUsageStats=false"]
+

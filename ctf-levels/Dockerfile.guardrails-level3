@@ -1,0 +1,29 @@
+# -------- Stage 1: Build dependencies --------
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+COPY requirements.txt .
+
+# Install build deps only for this stage
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        gcc \
+    && pip install --no-cache-dir --user -r requirements.txt \
+    && apt-get purge -y --auto-remove build-essential gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# -------- Stage 2: Runtime image --------
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Copy only the installed python packages from builder
+COPY --from=builder /root/.local /root/.local
+ENV PATH=/root/.local/bin:$PATH
+
+# Copy your app files
+COPY ai.png user.png config.py guardrails-level3.py .
+
+EXPOSE 8512
+CMD ["streamlit", "run", "guardrails-level3.py", "--server.port=8513", "--server.address=0.0.0.0", "--server.headless=true", "--server.runOnSave=true", "--server.enableXsrfProtection=false" ,"--server.enableCORS=false", "--browser.gatherUsageStats=false"]
+
