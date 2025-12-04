@@ -15,6 +15,15 @@ const DB_PATH = path.join(PERSISTENT_STORAGE_PATH, 'ctf.db');
 const MARKDOWN_PATH = path.join(__dirname, 'assets', 'levelDocs');
 const CONFIG_PATH = path.join(__dirname, 'config.py');
 
+const allowedOrigin = "http://ctf.ai.local:8080"; //mean
+
+app.use(cors({
+  origin: allowedOrigin,
+  credentials: true,
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+})); //mean
+
 let currentUser = null;
 const tokens = new Map();
 const proxy = httpProxy.createProxyServer({});
