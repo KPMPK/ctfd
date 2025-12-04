@@ -1,2 +1,2 @@
 sudo docker run -d --name ctfd-frontend   --network ctf-net   -p 8080:8080  --user 0  ctfd-frontend
-sudo docker run -d --name ctfd-backend --network ctf-net   -p 3001:3001 -v $(pwd)/data:/data ctfd-backend
+sudo docker run -d --name ctfd-backend   --network ctf-net   --network-alias ctf.ai.local   -p 3001:3001   -v $(pwd)/data:/data   ctfd-backend
