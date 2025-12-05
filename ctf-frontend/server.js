@@ -533,7 +533,7 @@ app.all('/level/:levelNumber', (req, res) => {
           });
           return res.status(403).json({ error: 'Access denied: Level not unlocked or invalid token' });
         }
-        proxy.web(req, res, { target: `http://localhost:85${level}` });
+        proxy.web(req, res, { target: `http://localhost:850${level}` });
       })
       .catch(err => {
         console.error('Error reading config.py for level:', err.message);
